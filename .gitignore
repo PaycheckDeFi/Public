@@ -1,0 +1,14 @@
+node_modules
+.env
+scripts/deploy_contracts.ts
+coverage
+.openzeppelin
+coverage.json
+typechain
+.vscode
+abi
+
+#Hardhat files.git
+cache
+artifacts
+bin

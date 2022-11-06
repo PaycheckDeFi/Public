@@ -32,7 +32,7 @@ The fees should be distributed according to the rules:
 * 3% to the multi-signature project development fund
 * 5% redistribution to all CHECK holders
 
-There is also grace amount of token which allows user to avoid any fees - 100B CHECK token
+There is also grace amount of token which allows user to avoid any fees - 100M CHECK token
 
 ## License
 

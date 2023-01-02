@@ -45,6 +45,20 @@ contract CheckToken is ERC20Upgradeable, OwnableUpgradeable {
     event ExcludeFromFee(address account);
 
     /**
+     * @notice Include in power status
+     * @dev Emitted when `account`is included in power status
+     * @param account address of the account
+     */
+    event IncludeInPowerStatus(address account);
+
+    /**
+     * @notice Exclude from power status
+     * @dev Emitted when `account`is excluded from power status
+     * @param account address of the account
+     */
+    event ExcludeFromPowerStatus(address account);
+
+    /**
      * @notice Update fee event
      * @dev Emitted when the fee is updated
      */
@@ -102,6 +116,9 @@ contract CheckToken is ERC20Upgradeable, OwnableUpgradeable {
 
     /// Project fee receiver
     address private _projectFeeReceiver;
+
+    /// Mapping of exclusions of Power Users
+    mapping(address => bool) private _isExcludedPowerStatus;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -170,6 +187,10 @@ contract CheckToken is ERC20Upgradeable, OwnableUpgradeable {
         return _isExcluded[account];
     }
 
+    function isExcludedPowerStatus(address account) public view returns (bool) {
+        return _isExcludedPowerStatus[account];
+    }
+
     function totalFees() external view returns (uint256) {
         return _tFeeTotal;
     }
@@ -184,6 +205,18 @@ contract CheckToken is ERC20Upgradeable, OwnableUpgradeable {
 
     function includeInReward(address account) external onlyOwner {
         _includeInReward(account);
+    }
+
+    function excludeFromPowerStatus(address account) external onlyOwner {
+        require(!_isExcludedPowerStatus[account], "Account is already excluded");
+        _isExcludedPowerStatus[account] = true;
+        emit ExcludeFromPowerStatus(account);
+    }
+
+    function includeInPowerStatus(address account) external onlyOwner {
+        require(_isExcludedPowerStatus[account], "Account is not excluded");
+        _isExcludedPowerStatus[account] = false;
+        emit IncludeInPowerStatus(account);
     }
 
     function excludeFromFee(address account) external onlyOwner {
@@ -269,11 +302,14 @@ contract CheckToken is ERC20Upgradeable, OwnableUpgradeable {
 
     function isExcludedFromFee(address from, address to) public view returns (bool) {
         uint256 totalFromBalance = _lockToken.balanceOf(from) + balanceOf(from);
+        uint256 totalToBalance = _lockToken.balanceOf(to) + balanceOf(to);
+
+        if (_isExcludedFromFee[from] || _isExcludedFromFee[to]) return true;
 
         return
-            _isExcludedFromFee[from] ||
-            _isExcludedFromFee[to] ||
-            (_graceTokenAmount > 0 && totalFromBalance >= _graceTokenAmount);
+            (_graceTokenAmount > 0) &&
+            ((totalFromBalance >= _graceTokenAmount && !isExcludedPowerStatus(from)) ||
+                (totalToBalance >= _graceTokenAmount && !isExcludedPowerStatus(to)));
     }
 
     function _tokenFromReflection(uint256 rAmount) internal view returns (uint256) {

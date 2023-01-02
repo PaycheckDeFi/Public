@@ -89,6 +89,50 @@ describe("Check", () => {
       expect(await check.balanceOf(addr4.address)).to.equal(amount);
     });
 
+    it("Power User should be able to transfer without fees", async () => {
+      const { totalSupply, owner, addr1, addr2, addr3, addr4, check } = await loadFixture(deployTokenFixture);
+      
+      const amount = 100_000_000 * 10 ** 6;
+      await check.connect(owner).transfer(addr1.address, amount);
+      expect(await check.balanceOf(addr1.address)).to.equal(amount);
+      await check.connect(addr1).transfer(addr4.address, amount / 2);
+      expect(await check.balanceOf(addr4.address)).to.equal(amount / 2);
+
+      await check.connect(addr1).transfer(addr3.address, amount / 2);
+      expect(await check.balanceOf(addr3.address)).to.lt(amount / 2);
+    });
+
+    it("User should be able to send Power User without fees", async () => {
+      const { totalSupply, owner, addr1, addr2, addr3, addr4, check } = await loadFixture(deployTokenFixture);
+      
+      const graceAmount = 100_000_000 * 10 ** 6;
+      const amount = 10_000_000 * 10 ** 6;
+      await check.connect(owner).transfer(addr1.address, graceAmount);
+      await check.connect(owner).transfer(addr2.address, amount);
+
+      expect(await check.balanceOf(addr1.address)).to.equal(graceAmount);
+      expect(await check.balanceOf(addr2.address)).to.equal(amount);
+
+      await check.connect(addr2).transfer(addr1.address, amount);
+      expect(await check.balanceOf(addr1.address)).to.equal(amount + graceAmount);
+    });
+
+    it("User with disabled Power User should be charged by fee", async () => {
+      const { totalSupply, owner, addr1, addr2, addr3, addr4, check } = await loadFixture(deployTokenFixture);
+      await check.excludeFromPowerStatus(addr1.address);
+      
+      const graceAmount = 100_000_000 * 10 ** 6;
+      const amount = 10_000_000 * 10 ** 6;
+      await check.connect(owner).transfer(addr1.address, graceAmount);
+      await check.connect(owner).transfer(addr2.address, amount);
+
+      expect(await check.balanceOf(addr1.address)).to.equal(graceAmount);
+      expect(await check.balanceOf(addr2.address)).to.equal(amount);
+
+      await check.connect(addr1).transfer(addr2.address, amount);
+      expect(await check.balanceOf(addr2.address)).to.lt(amount + graceAmount);
+    });    
+
     it("user will not get fees if excluded", async () => {
       const { totalSupply, owner, addr1, addr2, addr3, addr4, check } = await loadFixture(deployTokenFixture);
         

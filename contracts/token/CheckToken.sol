@@ -262,10 +262,10 @@ contract CheckToken is ERC20Upgradeable, OwnableUpgradeable {
         address recipient,
         uint256 amount
     ) public override returns (bool) {
-        _transferFrom(sender, recipient, amount);
         uint256 currentAllowance = _tokenAllowances[sender][_msgSender()];
         require(currentAllowance >= amount, "ERC20: exceeds allowance");
         _approve(sender, _msgSender(), currentAllowance - amount);
+        _transferFrom(sender, recipient, amount);        
 
         return true;
     }
@@ -469,7 +469,7 @@ contract CheckToken is ERC20Upgradeable, OwnableUpgradeable {
         address from,
         address to,
         uint256 amount
-    ) public {
+    ) private {
         require(from != address(0), "ERC20: zero from address");
         require(to != address(0), "ERC20: zero to address");
         require(amount > 0, "Zero transfer amount");
